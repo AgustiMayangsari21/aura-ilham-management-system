@@ -2,17 +2,69 @@ import React, { useState, useEffect } from 'react';
 import PaymentResult from './PaymentResult';
 import { printReceipt } from './printHelper';
 
+const getCategoryTheme = (name) => {
+  const normName = name?.toLowerCase() || '';
+  if (normName.includes('drink') || normName.includes('beverage') || normName.includes('air') || normName.includes('ais')) {
+    return {
+      active: 'bg-teal-600 text-white shadow-md shadow-teal-200/50 border-teal-600',
+      inactive: 'bg-white text-slate-600 border-slate-200 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700',
+      selectedCard: 'border-teal-500 bg-teal-50/20 shadow-lg shadow-teal-200/40 -translate-y-1',
+      hoverCard: 'border-slate-200 bg-white hover:border-teal-300 hover:shadow-lg hover:shadow-teal-100 hover:-translate-y-0.5',
+      badge: 'bg-teal-600 shadow-md shadow-teal-300',
+      price: 'text-teal-600 font-bold mt-1',
+      iconContainer: 'bg-teal-50/50',
+      iconSelected: 'text-teal-500'
+    };
+  }
+  if (normName.includes('tomyum') || normName.includes('tom yam') || normName.includes('soup') || normName.includes('sup')) {
+    return {
+      active: 'bg-rose-600 text-white shadow-md shadow-rose-200/50 border-rose-600',
+      inactive: 'bg-white text-slate-600 border-slate-200 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700',
+      selectedCard: 'border-rose-500 bg-rose-50/20 shadow-lg shadow-rose-200/40 -translate-y-1',
+      hoverCard: 'border-slate-200 bg-white hover:border-rose-300 hover:shadow-lg hover:shadow-rose-100 hover:-translate-y-0.5',
+      badge: 'bg-rose-600 shadow-md shadow-rose-300',
+      price: 'text-rose-600 font-bold mt-1',
+      iconContainer: 'bg-rose-50/50',
+      iconSelected: 'text-rose-500'
+    };
+  }
+  if (normName.includes('rice') || normName.includes('nasi') || normName.includes('noodle') || normName.includes('mee') || normName.includes('main') || normName.includes('food')) {
+    return {
+      active: 'bg-amber-600 text-white shadow-md shadow-amber-200/50 border-amber-600',
+      inactive: 'bg-white text-slate-600 border-slate-200 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700',
+      selectedCard: 'border-amber-500 bg-amber-50/20 shadow-lg shadow-amber-200/40 -translate-y-1',
+      hoverCard: 'border-slate-200 bg-white hover:border-amber-300 hover:shadow-lg hover:shadow-amber-100 hover:-translate-y-0.5',
+      badge: 'bg-amber-600 shadow-md shadow-amber-300',
+      price: 'text-amber-600 font-bold mt-1',
+      iconContainer: 'bg-amber-50/50',
+      iconSelected: 'text-amber-500'
+    };
+  }
+  // Default Emerald
+  return {
+    active: 'bg-emerald-600 text-white shadow-md shadow-emerald-200/50 border-emerald-600',
+    inactive: 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700',
+    selectedCard: 'border-emerald-500 bg-emerald-50/20 shadow-lg shadow-emerald-200/40 -translate-y-1',
+    hoverCard: 'border-slate-200 bg-white hover:border-emerald-300 hover:shadow-lg hover:shadow-emerald-100 hover:-translate-y-0.5',
+    badge: 'bg-emerald-600 shadow-md shadow-emerald-300',
+    price: 'text-emerald-600 font-bold mt-1',
+    iconContainer: 'bg-emerald-50/50',
+    iconSelected: 'text-emerald-500'
+  };
+};
+
 const POSSystem = ({ 
   menuItems, 
   categories, 
   customers, 
+  orders = [],
   staffList, 
   loggedInStaff,
   onPlaceOrder,
   showConfirm,
   showToast
 }) => {
-  const [selectedCategoryId, setSelectedCategoryId] = useState(categories[0]?.category_id || 1);
+  const [selectedCategoryId, setSelectedCategoryId] = useState('All');
   const [cart, setCart] = useState([]);
   
   // Payment Result State
@@ -21,6 +73,8 @@ const POSSystem = ({
   // Form State - adhering strictly to schema names
   const [order_type, setOrder_type] = useState('Dine-In'); // ENUM: 'Dine-In','Takeaway','Pre-Order'
   const [customer_id, setCustomer_id] = useState('');
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [showCustDropdown, setShowCustDropdown] = useState(false);
   const [staff_id, setStaff_id] = useState(loggedInStaff?.staff_id || staffList[0]?.staff_id || 1);
 
   // Sync staff_id if logged-in session changes
@@ -37,6 +91,13 @@ const POSSystem = ({
     const categoryMatch = selectedCategoryId === 'All' ? true : item.category_id === selectedCategoryId;
     return categoryMatch && item.availability_status === 'Available';
   });
+
+  const filteredCustomersForPOS = customers.filter(c => 
+    c.customer_id !== 1 && (
+      c.customer_name.toLowerCase().includes(customerSearch.toLowerCase()) ||
+      c.phone_number.includes(customerSearch)
+    )
+  );
 
   const addToCart = (menuItem) => {
     setCart(prev => {
@@ -168,15 +229,14 @@ const POSSystem = ({
             All Menu
           </button>
           {categories.map(cat => {
-            const activeStyle = 'bg-emerald-600 text-white shadow-md shadow-emerald-200/50 border-emerald-600';
-            const inactiveStyle = 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700';
+            const theme = getCategoryTheme(cat.category_name);
             const isActive = selectedCategoryId === cat.category_id;
             
             return (
               <button 
                 key={cat.category_id}
                 onClick={() => setSelectedCategoryId(cat.category_id)}
-                className={`px-6 py-2.5 rounded-2xl font-bold text-sm transition-all border shadow-sm shrink-0 ${isActive ? activeStyle : inactiveStyle}`}
+                className={`px-6 py-2.5 rounded-2xl font-bold text-sm transition-all border shadow-sm shrink-0 ${isActive ? theme.active : theme.inactive}`}
               >
                 {cat.category_name}
               </button>
@@ -190,33 +250,39 @@ const POSSystem = ({
             {displayedMenuItems.map(item => {
               const inCartCount = cart.find(c => c.menu_item_id === item.menu_item_id)?.quantity || 0;
               const isSelected = inCartCount > 0;
+              const cat = categories.find(c => c.category_id === item.category_id);
+              const theme = getCategoryTheme(cat?.category_name);
               
               return (
               <button
                 key={item.menu_item_id}
                 onClick={() => addToCart(item)}
                 className={`flex flex-col text-left p-4 rounded-3xl border transition-all duration-300 group relative ${
-                  isSelected 
-                    ? 'border-emerald-500 bg-emerald-50/30 shadow-lg shadow-emerald-200/50 -translate-y-1' 
-                    : 'border-slate-200 bg-white hover:border-emerald-300 hover:shadow-lg hover:shadow-emerald-100 hover:-translate-y-0.5'
+                  isSelected ? theme.selectedCard : theme.hoverCard
                 }`}
               >
                 {isSelected && (
-                  <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center shadow-md shadow-emerald-300 z-10 transition-transform scale-in">
+                  <div className={`absolute -top-3 -right-3 w-8 h-8 rounded-full text-white font-bold flex items-center justify-center z-10 transition-transform scale-in ${theme.badge}`}>
                     {inCartCount}
                   </div>
                 )}
-                <div className={`flex-1 w-full h-40 flex items-center justify-center rounded-2xl mb-4 overflow-hidden relative ${isSelected ? 'bg-emerald-100/50' : 'bg-emerald-50/50'}`}>
+                <div className={`flex-1 w-full h-40 flex items-center justify-center rounded-2xl mb-4 overflow-hidden relative ${isSelected ? 'bg-white/80' : theme.iconContainer}`}>
+                  {/* Category Label Overlay */}
+                  <span className={`absolute top-2.5 left-2.5 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider z-10 border border-white/10 ${
+                    theme.active.split(' ')[0]
+                  } text-white shadow-sm shadow-black/5`}>
+                    {cat?.category_name}
+                  </span>
                   {item.image_url ? (
                     <img src={item.image_url} alt={item.menu_name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                   ) : (
-                    <svg className={`w-12 h-12 stroke-[1.5] transition-transform transform group-hover:scale-110 ${isSelected ? 'text-emerald-500' : 'text-emerald-300'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className={`w-12 h-12 stroke-[1.5] transition-transform transform group-hover:scale-110 ${isSelected ? theme.iconSelected : 'text-slate-300'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m-6.938 13h13.876c.41 0 .742-.336.742-.75A8.25 8.25 0 0 0 3.32 16.25c0 .414.332.75.742.75ZM2 20h20" />
                     </svg>
                   )}
                 </div>
                 <h3 className="font-semibold text-slate-900 truncate w-full">{item.menu_name}</h3>
-                <p className="text-emerald-600 font-bold mt-1">RM {item.price.toFixed(2)}</p>
+                <p className={theme.price}>RM {item.price.toFixed(2)}</p>
               </button>
             )})}
             {displayedMenuItems.length === 0 && (
@@ -282,60 +348,159 @@ const POSSystem = ({
         <form onSubmit={handleSubmit} className="border-t border-slate-200 bg-white shrink-0">
           {/* Compact Order Details */}
           <div className="px-6 py-4 space-y-3 border-b border-slate-100">
-            <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-3">
+              {/* Order Type Segmented Control */}
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Order Type</label>
-                <select 
-                  name="order_type" 
-                  value={order_type} 
-                  onChange={e => setOrder_type(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
-                >
-                  <option value="Dine-In">Dine-In</option>
-                  <option value="Takeaway">Takeaway</option>
-                  <option value="Pre-Order">Pre-Order</option>
-                </select>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Order Type</label>
+                <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200/60 w-full">
+                  <button
+                    type="button"
+                    onClick={() => setOrder_type('Dine-In')}
+                    className={`flex-1 py-2 text-center text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                      order_type === 'Dine-In'
+                        ? 'bg-emerald-600 text-white shadow-md shadow-emerald-100'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                    }`}
+                  >
+                    <span>🍽️</span>
+                    <span>Dine-In</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOrder_type('Takeaway')}
+                    className={`flex-1 py-2 text-center text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                      order_type === 'Takeaway'
+                        ? 'bg-rose-600 text-white shadow-md shadow-rose-100'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                    }`}
+                  >
+                    <span>🛍️</span>
+                    <span>Takeaway</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOrder_type('Pre-Order')}
+                    className={`flex-1 py-2 text-center text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                      order_type === 'Pre-Order'
+                        ? 'bg-amber-600 text-white shadow-md shadow-amber-100'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                    }`}
+                  >
+                    <span>⏳</span>
+                    <span>Pre-Order</span>
+                  </button>
+                </div>
               </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Customer</label>
-                <select 
-                  name="customer_id" 
-                  value={customer_id} 
-                  onChange={e => setCustomer_id(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
-                >
-                  <option value="">Guest</option>
-                  {customers.filter(c => c.customer_id !== 1).map(c => <option key={c.customer_id} value={c.customer_id}>{c.customer_name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Method</label>
-                <select 
-                  name="payment_method" 
-                  value={payment_method} 
-                  onChange={e => setPayment_method(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
-                >
-                  <option value="Cash">Cash</option>
-                  <option value="QR Code">QR Code</option>
-                  <option value="Online Transfer">Transfer</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Amount</label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium text-xs">RM</span>
-                <input 
-                  type="number" 
-                  step="0.01" 
-                  name="payment_amount"
-                  value={payment_amount}
-                  onChange={e => setPayment_amount(e.target.value)}
-                  placeholder="0.00"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition placeholder:font-normal placeholder:text-slate-300"
-                  required
-                />
+
+              {/* Customer and Payment Method Row */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-2 relative">
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Customer Selection</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={
+                        customer_id 
+                          ? (customers.find(c => c.customer_id === parseInt(customer_id))?.customer_name || '') 
+                          : customerSearch
+                      }
+                      placeholder="Search name/phone..."
+                      onFocus={() => setShowCustDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowCustDropdown(false), 200)}
+                      onChange={(e) => {
+                        setCustomerSearch(e.target.value);
+                        setCustomer_id(''); // Reset selection when user typing
+                      }}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-3 pr-6 py-2 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition placeholder:font-normal placeholder:text-slate-300"
+                    />
+                    {customer_id && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomer_id('');
+                          setCustomerSearch('');
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                  {showCustDropdown && (
+                    <div className="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-slate-50">
+                      <div 
+                        onMouseDown={() => {
+                          setCustomer_id('');
+                          setCustomerSearch('');
+                          setShowCustDropdown(false);
+                        }}
+                        className="px-3 py-2 text-xs hover:bg-slate-50 cursor-pointer font-bold text-slate-500"
+                      >
+                        Guest (Walk-in)
+                      </div>
+                      {filteredCustomersForPOS.map(c => {
+                        const custOrders = (orders || []).filter(o => o.customer_id === c.customer_id);
+                        const spent = custOrders.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+                        let tierColor = 'from-orange-400 to-amber-500';
+                        if (spent >= 1500) tierColor = 'from-indigo-500 to-purple-600';
+                        else if (spent >= 500) tierColor = 'from-amber-400 to-yellow-500';
+                        else if (spent >= 100) tierColor = 'from-teal-500 to-emerald-600';
+
+                        return (
+                          <div
+                            key={c.customer_id}
+                            onMouseDown={() => {
+                              setCustomer_id(c.customer_id.toString());
+                              setShowCustDropdown(false);
+                            }}
+                            className="px-3 py-2.5 text-xs hover:bg-emerald-50 hover:text-emerald-800 cursor-pointer flex items-center justify-between gap-3 transition"
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className={`w-6 h-6 rounded-lg bg-gradient-to-br ${tierColor} text-white font-black text-[9px] flex items-center justify-center shrink-0`}>
+                                {c.customer_name.charAt(0).toUpperCase()}
+                              </div>
+                              <span className="font-bold text-slate-800">{c.customer_name}</span>
+                            </div>
+                            <span className="text-[10px] text-slate-400 font-medium">{c.phone_number}</span>
+                          </div>
+                        );
+                      })}
+                      {filteredCustomersForPOS.length === 0 && customerSearch !== '' && (
+                        <div className="px-3 py-2 text-xs text-slate-400 italic">No members found</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="col-span-1">
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Payment</label>
+                  <select 
+                    name="payment_method" 
+                    value={payment_method} 
+                    onChange={e => setPayment_method(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+                  >
+                    <option value="Cash">💵 Cash</option>
+                    <option value="QR Code">📱 QR Code</option>
+                    <option value="Online Transfer">🏦 Transfer</option>
+                  </select>
+                </div>
+                <div className="col-span-3">
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Amount</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium text-xs">RM</span>
+                    <input 
+                      type="number" 
+                      step="0.01" 
+                      name="payment_amount"
+                      value={payment_amount}
+                      onChange={e => setPayment_amount(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition placeholder:font-normal placeholder:text-slate-300"
+                      required
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>

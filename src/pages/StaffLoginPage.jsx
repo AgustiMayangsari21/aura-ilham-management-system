@@ -53,7 +53,7 @@ const StaffLoginPage = ({ onLoginSuccess }) => {
     setTimeout(() => setToastMessage(null), 5000);
   };
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
 
     // Prevent submission if invalid characters exist
@@ -75,21 +75,51 @@ const StaffLoginPage = ({ onLoginSuccess }) => {
         handleToast('Please choose a stronger password.', 'error');
         return;
       }
-      handleToast('Account successfully created!', 'success');
-      // Reset signup fields
-      setUsername('');
-      setEmail('');
-      setPassword('');
-      setConfirmPassword('');
+      try {
+        const response = await fetch('/api/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username,
+            staff_name: username,
+            role: 'Waiter',
+            phone_number: '',
+            password
+          })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Signup failed');
+        }
+        handleToast('Account successfully created! Please log in.', 'success');
+        setActiveTab('login');
+        setPassword('');
+        setConfirmPassword('');
+      } catch (err) {
+        handleToast(err.message, 'error');
+      }
     } else {
       if (!username || !password) {
         handleToast('Please fill out all fields.', 'error');
         return;
       }
-      handleToast('Login successful!', 'success');
-      setTimeout(() => {
-        onLoginSuccess({ staff_name: username, role: 'Staff' });
-      }, 800);
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Invalid credentials');
+        }
+        handleToast('Login successful!', 'success');
+        setTimeout(() => {
+          onLoginSuccess(data.staff);
+        }, 800);
+      } catch (err) {
+        handleToast(err.message, 'error');
+      }
     }
   };
 

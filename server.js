@@ -51,7 +51,9 @@ const query = async (sql, params = []) => {
 const runMigrations = async () => {
   await query(`ALTER TABLE Menu_Item ADD COLUMN IF NOT EXISTS image_url VARCHAR(255) NULL`);
   await query(`ALTER TABLE Inventory ADD COLUMN IF NOT EXISTS image_url VARCHAR(255) NULL`);
+  await query(`ALTER TABLE Inventory ADD COLUMN IF NOT EXISTS category VARCHAR(100) NULL DEFAULT 'General'`);
 };
+
 
 app.get('/api/bootstrap', async (req, res) => {
   try {
@@ -141,10 +143,11 @@ app.get('/api/inventory', async (req, res) => {
 
 app.post('/api/inventory', async (req, res) => {
   try {
-    const { inventory_name, quantity, unit, min_threshold, stock_status, image_url } = req.body;
+    const { inventory_name, category, quantity, unit, min_threshold, stock_status, image_url } = req.body;
+    const dbStockStatus = (stock_status === 'Low Stock' || stock_status === 'Out of Stock') ? 'Low Stock' : 'Sufficient';
     const result = await query(
-      'INSERT INTO Inventory (inventory_name, quantity, unit, min_threshold, stock_status, image_url) VALUES (?, ?, ?, ?, ?, ?)',
-      [inventory_name, quantity, unit, min_threshold, stock_status, image_url || null]
+      'INSERT INTO Inventory (inventory_name, category, quantity, unit, min_threshold, stock_status, image_url) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [inventory_name, category || 'General', quantity, unit, min_threshold, dbStockStatus, image_url || null]
     );
     const [rows] = await pool.execute('SELECT * FROM Inventory WHERE inventory_id = ?', [result.insertId]);
     res.status(201).json(rows[0]);
@@ -156,10 +159,11 @@ app.post('/api/inventory', async (req, res) => {
 app.put('/api/inventory/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { inventory_name, quantity, unit, min_threshold, stock_status, image_url } = req.body;
+    const { inventory_name, category, quantity, unit, min_threshold, stock_status, image_url } = req.body;
+    const dbStockStatus = (stock_status === 'Low Stock' || stock_status === 'Out of Stock') ? 'Low Stock' : 'Sufficient';
     await query(
-      'UPDATE Inventory SET inventory_name = ?, quantity = ?, unit = ?, min_threshold = ?, stock_status = ?, image_url = ? WHERE inventory_id = ?',
-      [inventory_name, quantity, unit, min_threshold, stock_status, image_url || null, id]
+      'UPDATE Inventory SET inventory_name = ?, category = ?, quantity = ?, unit = ?, min_threshold = ?, stock_status = ?, image_url = ? WHERE inventory_id = ?',
+      [inventory_name, category || 'General', quantity, unit, min_threshold, dbStockStatus, image_url || null, id]
     );
     const [rows] = await pool.execute('SELECT * FROM Inventory WHERE inventory_id = ?', [id]);
     res.json(rows[0]);
@@ -276,6 +280,197 @@ app.post('/api/upload-menu-image', upload.single('image'), (req, res) => {
   }
 
   res.json({ filePath: `/images/menu/${req.file.filename}` });
+});
+
+app.post('/api/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const [rows] = await pool.execute(
+      'SELECT staff_id, staff_name, role, phone_number, username FROM Staff WHERE username = ? AND password = SHA2(?, 256)',
+      [username, password]
+    );
+    if (rows.length > 0) {
+      res.json({ success: true, staff: rows[0] });
+    } else {
+      res.status(401).json({ error: 'Invalid username or password' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/staff/change-password', async (req, res) => {
+  try {
+    const { staff_id, current_password, new_password } = req.body;
+    const [rows] = await pool.execute(
+      'SELECT staff_id FROM Staff WHERE staff_id = ? AND password = SHA2(?, 256)',
+      [staff_id, current_password]
+    );
+    if (rows.length === 0) {
+      return res.status(401).json({ error: 'Incorrect current password' });
+    }
+    await query(
+      'UPDATE Staff SET password = SHA2(?, 256) WHERE staff_id = ?',
+      [new_password, staff_id]
+    );
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/signup', async (req, res) => {
+  try {
+    const { username, staff_name, role, phone_number, password } = req.body;
+    const [existing] = await pool.execute('SELECT staff_id FROM Staff WHERE username = ?', [username]);
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'Username already exists' });
+    }
+    await query(
+      'INSERT INTO Staff (staff_name, role, phone_number, username, password) VALUES (?, ?, ?, ?, SHA2(?, 256))',
+      [staff_name || username, role || 'Waiter', phone_number || '', username, password]
+    );
+    const [rows] = await pool.execute('SELECT staff_id, staff_name, role, phone_number, username FROM Staff WHERE username = ?', [username]);
+    res.status(201).json({ success: true, staff: rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Customers CRUD
+app.post('/api/customers', async (req, res) => {
+  try {
+    const { customer_name, phone_number, email } = req.body;
+    const result = await query(
+      'INSERT INTO Customer (customer_name, phone_number, email) VALUES (?, ?, ?)',
+      [customer_name, phone_number, email || null]
+    );
+    const [rows] = await pool.execute('SELECT * FROM Customer WHERE customer_id = ?', [result.insertId]);
+    res.status(201).json(rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/customers/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { customer_name, phone_number, email } = req.body;
+    await query(
+      'UPDATE Customer SET customer_name = ?, phone_number = ?, email = ? WHERE customer_id = ?',
+      [customer_name, phone_number, email || null, id]
+    );
+    const [rows] = await pool.execute('SELECT * FROM Customer WHERE customer_id = ?', [id]);
+    res.json(rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/customers/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (parseInt(id, 10) === 1) {
+      return res.status(400).json({ error: 'Cannot delete Walk-in Guest' });
+    }
+    await query('DELETE FROM Customer WHERE customer_id = ?', [id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Staff CRUD
+app.post('/api/staff', async (req, res) => {
+  try {
+    const { staff_name, role, phone_number, username, password } = req.body;
+    const [existing] = await pool.execute('SELECT staff_id FROM Staff WHERE username = ?', [username]);
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'Username already exists' });
+    }
+    await query(
+      'INSERT INTO Staff (staff_name, role, phone_number, username, password) VALUES (?, ?, ?, ?, SHA2(?, 256))',
+      [staff_name, role, phone_number, username, password]
+    );
+    const [rows] = await pool.execute('SELECT staff_id, staff_name, role, phone_number, username FROM Staff WHERE username = ?', [username]);
+    res.status(201).json(rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/staff/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { staff_name, role, phone_number, username, password } = req.body;
+    
+    // Check if other staff has this username
+    const [existing] = await pool.execute('SELECT staff_id FROM Staff WHERE username = ? AND staff_id != ?', [username, id]);
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'Username already in use' });
+    }
+
+    if (password) {
+      await query(
+        'UPDATE Staff SET staff_name = ?, role = ?, phone_number = ?, username = ?, password = SHA2(?, 256) WHERE staff_id = ?',
+        [staff_name, role, phone_number, username, password, id]
+      );
+    } else {
+      await query(
+        'UPDATE Staff SET staff_name = ?, role = ?, phone_number = ?, username = ? WHERE staff_id = ?',
+        [staff_name, role, phone_number, username, id]
+      );
+    }
+
+    const [rows] = await pool.execute('SELECT staff_id, staff_name, role, phone_number, username FROM Staff WHERE staff_id = ?', [id]);
+    res.json(rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/staff/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await query('DELETE FROM Staff WHERE staff_id = ?', [id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Categories CRUD
+app.post('/api/categories', async (req, res) => {
+  try {
+    const { category_name } = req.body;
+    const result = await query('INSERT INTO Category (category_name) VALUES (?)', [category_name]);
+    const [rows] = await pool.execute('SELECT * FROM Category WHERE category_id = ?', [result.insertId]);
+    res.status(201).json(rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/categories/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { category_name } = req.body;
+    await query('UPDATE Category SET category_name = ? WHERE category_id = ?', [category_name, id]);
+    const [rows] = await pool.execute('SELECT * FROM Category WHERE category_id = ?', [id]);
+    res.json(rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/categories/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await query('DELETE FROM Category WHERE category_id = ?', [id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Cannot delete category because menu items are currently linked to it.' });
+  }
 });
 
 app.delete('/api/delete-menu-image', (req, res) => {
