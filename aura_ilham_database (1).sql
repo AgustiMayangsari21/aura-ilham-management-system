@@ -201,10 +201,10 @@ INSERT INTO Menu_Item (menu_name, price, availability_status, category_id, image
 ('Mee Goreng',       7.50,  'Available',   1, '/images/menu/1779418942472-tkfz-listing.jpg'),
 ('Ayam Goreng',      9.00,  'Available',   1, '/images/menu/1779530790725-Resep-Ayam-Goreng-Serundeng-ala-Rumahan-yang-Nggak-Kalah-Enak-dari-Restoran.jpg'),
 ('Teh Tarik',        3.50,  'Available',   2, '/images/menu/1779419460864-teh-ais.jpg'),
-('Milo Ais',         3.50,  'Available',   2, NULL),
+('Milo Ais',         3.50,  'Available',   2, '/images/menu/milo_ais.png'),
 ('Air Sirap',        2.00,  'Available',   2, '/images/menu/1779421398966-sirap-ais-agtg.jpg'),
 ('Cendol',           4.00,  'Available',   3, '/images/menu/1779347295173-Kampung_Paya_Jaras_Tengah__Selangor_20250112_111330.jpg'),
-('Pisang Goreng',    3.00,  'Available',   4, NULL);
+('Pisang Goreng',    3.00,  'Available',   4, '/images/menu/pisang_goreng.png');
 
 -- ============================================================
 -- SAMPLE DATA — INVENTORY
