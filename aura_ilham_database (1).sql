@@ -60,11 +60,13 @@ CREATE TABLE Category (
 CREATE TABLE Inventory (
     inventory_id    INT             AUTO_INCREMENT,
     inventory_name  VARCHAR(100)    NOT NULL,
+    category        VARCHAR(100)    NULL        DEFAULT 'General',
     quantity        DECIMAL(10,2)   NOT NULL    DEFAULT 0.00,
     unit            VARCHAR(20)     NOT NULL,
     min_threshold   DECIMAL(10,2)   NOT NULL,
     stock_status    ENUM('Sufficient','Low Stock')
                                     NOT NULL    DEFAULT 'Sufficient',
+    image_url       VARCHAR(255)    NULL,
 
     CONSTRAINT PK_Inventory
         PRIMARY KEY (inventory_id),
@@ -86,6 +88,7 @@ CREATE TABLE Menu_Item (
     availability_status ENUM('Available','Unavailable')
                                         NOT NULL    DEFAULT 'Available',
     category_id         INT             NOT NULL,
+    image_url           VARCHAR(255)    NULL,
 
     CONSTRAINT PK_Menu_Item
         PRIMARY KEY (menu_item_id),
@@ -193,26 +196,26 @@ INSERT INTO Category (category_name) VALUES
 -- ============================================================
 -- SAMPLE DATA — MENU_ITEM
 -- ============================================================
-INSERT INTO Menu_Item (menu_name, price, availability_status, category_id) VALUES
-('Nasi Lemak',       8.00,  'Available',   1),
-('Mee Goreng',       7.50,  'Available',   1),
-('Ayam Goreng',      9.00,  'Available',   1),
-('Teh Tarik',        3.50,  'Available',   2),
-('Milo Ais',         3.50,  'Available',   2),
-('Air Sirap',        2.00,  'Available',   2),
-('Cendol',           4.00,  'Available',   3),
-('Pisang Goreng',    3.00,  'Available',   4);
+INSERT INTO Menu_Item (menu_name, price, availability_status, category_id, image_url) VALUES
+('Nasi Lemak',       8.00,  'Available',   1, '/images/menu/nasi_lemak.png'),
+('Mee Goreng',       7.50,  'Available',   1, '/images/menu/1779418942472-tkfz-listing.jpg'),
+('Ayam Goreng',      9.00,  'Available',   1, '/images/menu/1779530790725-Resep-Ayam-Goreng-Serundeng-ala-Rumahan-yang-Nggak-Kalah-Enak-dari-Restoran.jpg'),
+('Teh Tarik',        3.50,  'Available',   2, '/images/menu/1779419460864-teh-ais.jpg'),
+('Milo Ais',         3.50,  'Available',   2, '/images/menu/milo_ais.png'),
+('Air Sirap',        2.00,  'Available',   2, '/images/menu/1779421398966-sirap-ais-agtg.jpg'),
+('Cendol',           4.00,  'Available',   3, '/images/menu/cendol.png'),
+('Pisang Goreng',    3.00,  'Available',   4, '/images/menu/pisang_goreng.png');
 
 -- ============================================================
 -- SAMPLE DATA — INVENTORY
 -- ============================================================
-INSERT INTO Inventory (inventory_name, quantity, unit, min_threshold, stock_status) VALUES
-('Rice',        50.00,  'kg',     10.00,  'Sufficient'),
-('Chicken',     20.00,  'kg',      5.00,  'Sufficient'),
-('Cooking Oil',  8.00,  'litre',   2.00,  'Sufficient'),
-('Sugar',        4.00,  'kg',      5.00,  'Low Stock'),
-('Tea Leaves',   2.50,  'kg',      1.00,  'Sufficient'),
-('Flour',        3.00,  'kg',      5.00,  'Low Stock');
+INSERT INTO Inventory (inventory_name, category, quantity, unit, min_threshold, stock_status, image_url) VALUES
+('Rice',        'General', 50.00,  'kg',     10.00,  'Sufficient', '/images/menu/rice.png'),
+('Chicken',     'General', 20.00,  'kg',      5.00,  'Sufficient', '/images/menu/chicken.png'),
+('Cooking Oil',  'General', 8.00,  'litre',   2.00,  'Sufficient', '/images/menu/cooking_oil.png'),
+('Sugar',        'General', 4.00,  'kg',      5.00,  'Low Stock',  '/images/menu/sugar.png'),
+('Tea Leaves',   'General', 2.50,  'kg',      1.00,  'Sufficient', '/images/menu/tea_leaves.png'),
+('Flour',        'General', 3.00,  'kg',      5.00,  'Low Stock',  '/images/menu/flour.png');
 
 -- ============================================================
 -- SAMPLE DATA — STAFF
