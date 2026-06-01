@@ -60,11 +60,13 @@ CREATE TABLE Category (
 CREATE TABLE Inventory (
     inventory_id    INT             AUTO_INCREMENT,
     inventory_name  VARCHAR(100)    NOT NULL,
+    category        VARCHAR(100)    NULL        DEFAULT 'General',
     quantity        DECIMAL(10,2)   NOT NULL    DEFAULT 0.00,
     unit            VARCHAR(20)     NOT NULL,
     min_threshold   DECIMAL(10,2)   NOT NULL,
     stock_status    ENUM('Sufficient','Low Stock')
                                     NOT NULL    DEFAULT 'Sufficient',
+    image_url       VARCHAR(255)    NULL,
 
     CONSTRAINT PK_Inventory
         PRIMARY KEY (inventory_id),
@@ -86,6 +88,7 @@ CREATE TABLE Menu_Item (
     availability_status ENUM('Available','Unavailable')
                                         NOT NULL    DEFAULT 'Available',
     category_id         INT             NOT NULL,
+    image_url           VARCHAR(255)    NULL,
 
     CONSTRAINT PK_Menu_Item
         PRIMARY KEY (menu_item_id),
@@ -193,15 +196,15 @@ INSERT INTO Category (category_name) VALUES
 -- ============================================================
 -- SAMPLE DATA — MENU_ITEM
 -- ============================================================
-INSERT INTO Menu_Item (menu_name, price, availability_status, category_id) VALUES
-('Nasi Lemak',       8.00,  'Available',   1),
-('Mee Goreng',       7.50,  'Available',   1),
-('Ayam Goreng',      9.00,  'Available',   1),
-('Teh Tarik',        3.50,  'Available',   2),
-('Milo Ais',         3.50,  'Available',   2),
-('Air Sirap',        2.00,  'Available',   2),
-('Cendol',           4.00,  'Available',   3),
-('Pisang Goreng',    3.00,  'Available',   4);
+INSERT INTO Menu_Item (menu_name, price, availability_status, category_id, image_url) VALUES
+('Nasi Lemak',       8.00,  'Available',   1, '/images/menu/1779347295173-Kampung_Paya_Jaras_Tengah__Selangor_20250112_111330.jpg'),
+('Mee Goreng',       7.50,  'Available',   1, '/images/menu/1779418922552-3f0d98a9-c59f-4dac-8071-4087d82aa365-scaled.webp'),
+('Ayam Goreng',      9.00,  'Available',   1, '/images/menu/1779530790725-Resep-Ayam-Goreng-Serundeng-ala-Rumahan-yang-Nggak-Kalah-Enak-dari-Restoran.jpg'),
+('Teh Tarik',        3.50,  'Available',   2, '/images/menu/1779419460864-teh-ais.jpg'),
+('Milo Ais',         3.50,  'Available',   2, '/images/menu/1779533175505-Untitled-design-2023-05-15T115353.795.jpg'),
+('Air Sirap',        2.00,  'Available',   2, '/images/menu/1779421398966-sirap-ais-agtg.jpg'),
+('Cendol',           4.00,  'Available',   3, '/images/menu/1779533318966-maxresdefault.jpg'),
+('Pisang Goreng',    3.00,  'Available',   4, '/images/menu/1779418942472-tkfz-listing.jpg');
 
 -- ============================================================
 -- SAMPLE DATA — INVENTORY
